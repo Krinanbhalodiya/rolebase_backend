@@ -290,34 +290,35 @@ const Login=async(req,res)=>{
         }
     };
     
-    const resetPassword = async (req, res) => {
-        try {
-            const { email, otp, newPassword } = req.body;
-    
-            const user = await UserModel.findOne({
-                email,
-                resetPasswordOTP: otp,
-                resetPasswordExpires: { $gt: Date.now() }, // Ensure OTP is not expired
-            });
-    
-            if (!user) {
-                return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
-            }
-    
-            // Hash and update the new password
-            user.password = await bcryptjs.hash(newPassword, 10);
-            user.resetPasswordToken = undefined;
-            user.resetPasswordExpires = undefined;
-            await user.save();
-    
-            res.status(200).json({ success: true, message: "Password reset successfully" });
-        } catch (error) {
-            console.log(error);
-            res.status(500).json({ success: false, message: "Internal server error" });
-        }
-    };
-    
+   
+//5. Reset Password Function
+const resetPassword = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const { newPassword } = req.body;
 
+        console.log("Received Token:", token);
+        const user = await UserModel.findOne({
+            resetPasswordToken: token,
+            resetPasswordExpires: { $gt: Date.now() },
+        });
+        console.log("User Found:", user);
+        
+        if (!user) {
+            return res.status(400).json({ success: false, message: "Invalid or expired token" });
+        }
+
+        user.password = await bcryptjs.hash(newPassword, 10);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ success: true, message: "Password reset successfully" });
+    } catch (error) {
+        console.log("Error resetting password:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
 
     // const forgotPassword = async (req, res) => {
     //     try {
